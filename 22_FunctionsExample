@@ -1,0 +1,66 @@
+pragma solidity >=0.5.11 <0.7.0;
+
+contract FunctionsExample {
+    mapping(address => uint) public balanceReceived;
+    
+    address payable owner;
+    
+    constructor() public {
+        owner = msg.sender;
+    }
+    
+    /*
+    If we re-deploy the smart contract then the address “owner” is set automatically through the
+    constructor, but the constructor can not be called anymore. We can call the new
+    “destroySmartContract” function, but we can’t call the constructor again.
+    */
+    function destroySmartContract() public {
+        require(msg.sender == owner, "You are not the owner");
+        selfdestruct(owner);
+    }
+    
+    function receiveMoney() public payable {
+        assert(balanceReceived[msg.sender] + msg.value >= balanceReceived[msg.sender]);
+        balanceReceived[msg.sender] += msg.value;
+    }
+    
+    function withdrawMoney(address payable _to, uint _amount) public {
+        require(_amount <= balanceReceived[msg.sender], "not enough funds.");
+        assert(balanceReceived[msg.sender] >= balanceReceived[msg.sender] - _amount);
+        balanceReceived[msg.sender] -= _amount;
+        _to.transfer(_amount);
+    }
+    
+    /*
+        The fallback function is called whenever the smart contract is called “as-is”,
+        or if no other function matches.
+        
+        UPDATE Solidity 0.6:
+        The “fallback” function is called when no other function matches and no money is sent along.
+        The “receive” function matches when no other function matches and money is sent along.
+    */
+    
+    receive() external payable {
+        receiveMoney();
+    }
+    
+    
+    /*
+    If you deploy the smart contract with the new functions, you can retrieve the owner with a custom
+    getter function and you can convert wei to ether.
+    Pure functions can not read from state or modify the state in any way
+    View function can read from state but not modify the state
+    Both are free, because reading only applies to your local copy of the blockchain. There is no need for
+    mining. 
+    */
+    
+    
+    // address payable owner;
+    function getOwner() public view returns(address) {
+        return owner;
+    }
+    
+    function convertWeiToEth(uint _amountInWei) public pure returns(uint) {
+        return _amountInWei / 1 ether;
+    }
+}
